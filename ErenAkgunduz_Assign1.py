@@ -71,7 +71,7 @@ def gradient_descent(X, y, l, a=10**-5) -> np.ndarray:
         # starting parameters vector
         b = np.array([np.random.rand() for _ in range(X.shape[1])])
         for _ in range(10**5):  # total iterations for each tuning parameter
-            b = b - 2 * a * (val * b - X.T @ (y - X @ b))
+            b = b - 2 * a * (l * b - X.T @ (y - X @ b))
         return b
 
     coeffs = np.zeros((7, 9))
