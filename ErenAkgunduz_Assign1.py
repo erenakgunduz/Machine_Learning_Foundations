@@ -22,7 +22,7 @@ logger.addHandler(fh)
 l = np.array([10**-2, 10**-1, 1, 10, 10**2, 10**3, 10**4])
 
 
-def preprocess_data(filename) -> tuple:
+def preprocess_data(filename: str) -> tuple:
     "Take in raw data and convert it to a workable format/state"
     if not isinstance(filename, str):
         raise TypeError("Filename should be a string :)")
@@ -86,7 +86,7 @@ def gradient_descent(X, y, l, a=10**-5) -> np.ndarray:
     return coeffs
 
 
-def cross_validation(data, k=5) -> np.ndarray:
+def cross_validation(data, k: int = 5) -> np.ndarray:
     "Implementation of relevant gradient descent utilizing k-fold cross validation"
     if not isinstance(k, int):
         raise TypeError("Number of folds should be an integer :)")
