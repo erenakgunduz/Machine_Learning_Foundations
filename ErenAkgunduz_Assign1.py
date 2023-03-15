@@ -132,22 +132,24 @@ def main():
     columns, data = preprocess_data("Credit_N400_p9.csv")  # unpack the tuple
     # --- Deliverable 1 ---
     X, y = ridge_regression(data)
-    b = gradient_descent(X, y, l)  # use default value for learning rate
-    plt.xscale("log")
     # transpose so that each row is one of the nine features with the seven columns for TP
+    b = gradient_descent(X, y, l).T  # use default value for learning rate
     # this way, each index (row) has the vector I need to plot points
-    [plt.plot(l, b.T[i], label=f"{columns[i]}") for i, _ in enumerate(b)]
-    plt.xlabel("Tuning parameter")
-    plt.ylabel("Regression coefficients")
+    plt.figure(figsize=(8, 6))
+    plt.xscale("log")
+    [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(b)]
+    plt.xlabel(r"Tuning parameter ($\lambda$)")
+    plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
     plt.legend(title="Features", fontsize="small")
-    plt.show()
+    plt.savefig("deliverable1.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = cross_validation(data)
+    plt.figure(figsize=(8, 6))
     plt.xscale("log")
     plt.plot(l, cv_error)
-    plt.xlabel("Tuning parameter")
-    plt.ylabel("CV(5) error")
-    plt.show()
+    plt.xlabel(r"Tuning parameter ($\lambda$)")
+    plt.ylabel(r"$CV_{(5)}$ mean squared error")
+    plt.savefig("deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
     l_optimal = int(l[np.argmin(cv_error)])
     print(l_optimal)
