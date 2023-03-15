@@ -93,7 +93,7 @@ def cross_validation(data, k=5) -> np.ndarray:
 
     data_shuffled = data  # make a copy of the original data
     # shuffle the copy so the data in each fold are randomly determined
-    np.random.seed(0)
+    # np.random.seed(0)
     np.random.shuffle(data_shuffled)
     logger.debug(f"{data_shuffled.shape}\n{data_shuffled}")
 
