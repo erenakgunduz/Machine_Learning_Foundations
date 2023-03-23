@@ -157,7 +157,7 @@ def main():
         plt.xlabel(r"Tuning parameter ($\lambda$)")
         plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
         plt.legend(title="Features", fontsize="small")
-        plt.savefig(f"img/assign2/deliverable1_{int(a[index] * 5)}.png", dpi=200)
+        plt.savefig(f"img/assign2/deliverable1_{index}.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
