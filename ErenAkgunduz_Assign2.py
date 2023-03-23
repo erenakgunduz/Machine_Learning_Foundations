@@ -82,7 +82,6 @@ def coordinate_descent(X, y, l, a) -> np.ndarray:
         return beta
 
     coeffs = np.zeros((6, 9, 9))
-    # logger.debug(coeffs)
 
     if not isinstance(l, int) and not isinstance(a, float):
         for i_a, val_a in enumerate(a):
@@ -149,15 +148,16 @@ def main():
     X, y = elastic_net(data)
     B = coordinate_descent(X, y, l, a)
     logger.debug(f"{B.shape}\n{B}")
-    # this way, each index (row) has the vector I need to plot points
     for index, alpha in enumerate(B):
         plt.figure(figsize=(8, 6))
         plt.xscale("log")
+        # transpose so that each row is one of the nine features with the nine columns for TP
+        # this way, each index (row) has the vector I need to plot points
         [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(alpha.T)]
         plt.xlabel(r"Tuning parameter ($\lambda$)")
         plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
         plt.legend(title="Features", fontsize="small")
-        plt.savefig(f"img/deliverable1_a2_{a[index]}.png", dpi=200)
+        plt.savefig(f"img/assign2/deliverable1_{int(a[index] * 5)}.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
@@ -166,7 +166,7 @@ def main():
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.legend(title=r"$\alpha$", fontsize="small")
-    plt.savefig("img/deliverable2_a2.png", dpi=200)
+    plt.savefig("img/assign2/deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
     logger.debug(cv_error.argmin())
     logger.debug(cv_error.min())
@@ -181,6 +181,10 @@ def main():
     print(l_optimal, a_optimal)
     # --- Deliverable 4 ---
     B = coordinate_descent(X, y, l_optimal, a_optimal)
+    print(B)
+    B = coordinate_descent(X, y, l_optimal, a[0])  # lasso, same arguments as before
+    print(B)
+    B = coordinate_descent(X, y, l_optimal, a[5])  # ridge
     print(B)
 
 

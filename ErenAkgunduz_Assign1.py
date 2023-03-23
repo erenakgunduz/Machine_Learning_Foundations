@@ -141,7 +141,7 @@ def main():
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
     plt.legend(title="Features", fontsize="small")
-    plt.savefig("img/deliverable1_a1.png", dpi=200)
+    plt.savefig("img/assign1/deliverable1.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
@@ -149,7 +149,7 @@ def main():
     plt.plot(l, cv_error)
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
-    plt.savefig("img/deliverable2_a1.png", dpi=200)
+    plt.savefig("img/assign1/deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
     l_optimal = int(l[cv_error.argmin()])
     print(l_optimal)
