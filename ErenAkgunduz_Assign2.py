@@ -83,7 +83,7 @@ def coordinate_descent(X, y, l, a) -> np.ndarray:
 
     coeffs = np.zeros((6, 9, 9))
 
-    if not isinstance(l, int) and not isinstance(a, float):
+    if not isinstance(l, (int, float)) and not isinstance(a, (int, float)):
         for i_a, val_a in enumerate(a):
             for i_l, val_l in enumerate(l):
                 beta = cd(val_l, val_a)
@@ -176,7 +176,7 @@ def main():
             cv_error.argmin() % cv_error.shape[1],  # gets the column
         ]
     )
-    l_optimal = int(l[cv_error.argmin() // cv_error.shape[1]])
+    l_optimal = float(l[cv_error.argmin() // cv_error.shape[1]])
     a_optimal = float(a[cv_error.argmin() % cv_error.shape[1]])
     print(l_optimal, a_optimal)
     # --- Deliverable 4 ---
