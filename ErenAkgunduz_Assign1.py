@@ -65,7 +65,7 @@ def ridge_regression(data) -> tuple:
 
 
 def gradient_descent(X, y, l, a=10**-5) -> np.ndarray:
-    "Implementation of vectorized batch gradient descent, applying ridge regression"
+    "Implementation of vectorized batch gradient descent with learning rate alpha, applying ridge regression"
 
     def gd(l):
         # starting parameters vector
@@ -77,7 +77,7 @@ def gradient_descent(X, y, l, a=10**-5) -> np.ndarray:
     coeffs = np.zeros((7, 9))
     logger.debug(coeffs)
 
-    if not isinstance(l, int):
+    if not isinstance(l, (int, float)):
         for index, val in enumerate(l):
             b = gd(val)
             coeffs[index] = b
@@ -151,7 +151,7 @@ def main():
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.savefig("img/assign1/deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
-    l_optimal = int(l[cv_error.argmin()])
+    l_optimal = float(l[cv_error.argmin()])
     print(l_optimal)
     # --- Deliverable 4 ---
     b = gradient_descent(X, y, l_optimal)
