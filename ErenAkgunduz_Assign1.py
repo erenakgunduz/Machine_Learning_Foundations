@@ -19,7 +19,7 @@ logger.addHandler(fh)
 
 
 # grid of tuning parameters represented by lambda
-l = np.array([10**-2, 10**-1, 1, 10, 10**2, 10**3, 10**4])
+l = np.array([1e-2, 1e-1, 1, 10, 1e2, 1e3, 1e4])
 
 
 def preprocess_data(filename: str) -> tuple:

@@ -19,7 +19,7 @@ logger.addHandler(fh)
 
 # --- all tuning parameters ---
 # grid of tuning parameters represented by lambda
-l = np.array([10**-2, 10**-1, 1, 10, 10**2, 10**3, 10**4, 10**5, 10**6])
+l = np.array([1e-2, 1e-1, 1, 10, 1e2, 1e3, 1e4, 1e5, 1e6])
 a = np.array([0, 0.2, 0.4, 0.6, 0.8, 1])  # alpha
 
 
@@ -78,7 +78,7 @@ def coordinate_descent(X, y, l, a) -> np.ndarray:
                 x_k = X[:, k]
                 a_k = x_k.T @ (y - X @ beta + x_k * beta[k])
                 relu = np.maximum(0, np.abs(a_k) - (l * (1 - a) / 2))
-                beta[k] = np.sign(a_k) * relu / b[k] + l * a
+                beta[k] = np.sign(a_k) * relu / (b[k] + l * a)
         return beta
 
     coeffs = np.zeros((6, 9, 9))
@@ -182,7 +182,7 @@ def main():
     # --- Deliverable 4 ---
     B = coordinate_descent(X, y, l_optimal, a_optimal)
     print(B)
-    B = coordinate_descent(X, y, l_optimal, a[0])  # lasso, same arguments as before
+    B = coordinate_descent(X, y, l_optimal, a[0])  # lasso
     print(B)
     B = coordinate_descent(X, y, l_optimal, a[5])  # ridge
     print(B)
