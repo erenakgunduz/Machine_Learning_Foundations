@@ -68,7 +68,7 @@ def elastic_net(data) -> tuple:
 def coordinate_descent(X, y, l, a) -> np.ndarray:
     "Implementation of vectorized coordinate descent, applying elastic net"
 
-    def cd(l: int, a: float):
+    def cd(l, a):
         # b vector, each value (b_k) remains constant
         b = np.array([np.sum(X[:, k] ** 2) for k in range(X.shape[1])])
         # starting parameters vector
