@@ -18,9 +18,8 @@ fh.setFormatter(fmt)
 logger.addHandler(fh)
 
 # --- all tuning parameters ---
-# grid of tuning parameters represented by lambda
-l = np.array([1e-2, 1e-1, 1, 10, 1e2, 1e3, 1e4, 1e5, 1e6])
-a = np.array([0, 0.2, 0.4, 0.6, 0.8, 1])  # alpha
+l = np.logspace(-2, 6, 9)  # lambda, from 1e-2 to 1e6, and with nine total samples
+a = np.linspace(0, 1, 6)  # alpha, from 0 to 1, now with six evenly spaced samples
 
 
 def preprocess_data(filename: str) -> tuple:
