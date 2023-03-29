@@ -161,7 +161,7 @@ def main():
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    [plt.plot(l, cv, label=f"{a[i]}") for i, cv in enumerate(cv_error.T)]
+    [plt.plot(l, cv, label=f"{round(a[i], 1)}") for i, cv in enumerate(cv_error.T)]
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.legend(title=r"$\alpha$", fontsize="small")
