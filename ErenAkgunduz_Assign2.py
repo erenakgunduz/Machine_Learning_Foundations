@@ -35,7 +35,7 @@ def preprocess_data(filename: str) -> tuple:
 
         df = pd.read_csv(datafile, sep=",")  # read and pass to dataframe
         mapping = {
-            "Gender": {"Male": 0, "Female": 1},
+            "Gender": {"Female": 0, "Male": 1},
             "Student": {"No": 0, "Yes": 1},
             "Married": {"No": 0, "Yes": 1},
         }  # so no ambiguity about how we encode categorical columns
@@ -59,8 +59,8 @@ def elastic_net(data) -> tuple:
     X = (dm - np.mean(dm, axis=0)) / np.std(dm, axis=0)  # standardize (center & scale)
 
     logger.debug(X.shape)
-    logger.debug(np.mean(X[:, 6]))
-    logger.debug(np.std(X[:, 6]))
+    logger.debug([np.mean(X[:, k]) for k in range(X.shape[1])])
+    logger.debug([np.std(X[:, k]) for k in range(X.shape[1])])
     return (X, y)
 
 
