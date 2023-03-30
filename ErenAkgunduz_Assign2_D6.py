@@ -66,39 +66,48 @@ def standardize(data) -> tuple:
     return (X, y)
 
 
-def coordinate_descent(X, y, l, a) -> np.ndarray:
-    "Implementation of vectorized coordinate descent, applying elastic net"
-
-    def cd(l, a):
-        # b vector, each value (b_k) remains constant
-        b = np.array([np.sum(X[:, k] ** 2) for k in range(X.shape[1])])
-        # starting parameters vector
-        beta = np.array([np.random.rand() for _ in range(X.shape[1])])
-        for _ in range(1000):  # total iterations
-            for k, _ in enumerate(beta):
-                x_k = X[:, k]
-                a_k = x_k.T @ (y - X @ beta + x_k * beta[k])
-                relu = np.maximum(0, np.abs(a_k) - (l * (1 - a) / 2))
-                beta[k] = np.sign(a_k) * relu / (b[k] + l * a)
-        return beta
+def elastic_net(X, y, l, a, cv: bool = False, k: int = 5) -> np.ndarray:
+    if not isinstance(k, int):
+        raise TypeError("Number of folds should be an integer :)")
 
     coeffs = np.zeros((6, 9, 9))
+    cv_errors = np.zeros((9, 6, 5))
+
+    def en(l, a):
+        elastic = ElasticNet(alpha=l, l1_ratio=a)
+        elastic.fit(X, y)
+        return elastic.coef_
 
     if not isinstance(l, (int, float)) and not isinstance(a, (int, float)):
-        for i_a, val_a in enumerate(a):
+        for i_a, val_a in enumerate(np.flip(a)):
             for i_l, val_l in enumerate(l):
-                beta = cd(val_l, val_a)
-                coeffs[i_a, i_l] = beta
+                if cv:
+                    cv_errors[i_l, i_a] = np.abs(
+                        cross_val_score(
+                            ElasticNet(alpha=val_l, l1_ratio=val_a),
+                            X,
+                            y,
+                            cv=k,
+                            scoring="neg_mean_squared_error",
+                        )
+                    )
+                else:
+                    coeffs[i_a, i_l] = en(val_l, val_a)
     else:
-        coeffs = cd(l, a)
+        coeffs = en(l, a)
+
+    if cv:
+        logger.debug(f"{cv_errors.shape}\n{cv_errors}")
+        logger.debug(cv_errors.mean(axis=2))
+        return cv_errors.mean(axis=2)
     return coeffs
 
 
 def main():
     columns, data = preprocess_data("Credit_N400_p9.csv")  # unpack the tuple
     # --- Deliverable 1 ---
-    X, y = elastic_net(data)
-    B = coordinate_descent(X, y, l, a)
+    X, y = standardize(data)
+    B = elastic_net(X, y, l, a)
     logger.debug(f"{B.shape}\n{B}")
     for index, alpha in enumerate(B):
         plt.figure(figsize=(8, 6))
@@ -109,16 +118,16 @@ def main():
         plt.xlabel(r"Tuning parameter ($\lambda$)")
         plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
         plt.legend(title="Features", fontsize="small")
-        plt.savefig(f"img/assign2/deliverable1_{index}.png", dpi=200)
+        plt.savefig(f"img/assign2/deliverable1_{index}_d6.png", dpi=200)
     # --- Deliverable 2 ---
-    cv_error = cross_validation(data)
+    cv_error = elastic_net(X, y, l, a, True)
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
     [plt.plot(l, cv, label=f"{round(a[i], 1)}") for i, cv in enumerate(cv_error.T)]
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.legend(title=r"$\alpha$", fontsize="small")
-    plt.savefig("img/assign2/deliverable2.png", dpi=200)
+    plt.savefig("img/assign2/deliverable2_d6.png", dpi=200)
     # --- Deliverable 3 ---
     logger.debug(cv_error.argmin())
     logger.debug(cv_error.min())
@@ -132,11 +141,11 @@ def main():
     a_optimal = float(a[cv_error.argmin() % cv_error.shape[1]])
     print(l_optimal, a_optimal)
     # --- Deliverable 4 ---
-    B = coordinate_descent(X, y, l_optimal, a_optimal)
+    B = elastic_net(X, y, l_optimal, a_optimal)
     print(B)
-    B = coordinate_descent(X, y, l_optimal, a[0])  # lasso
+    B = elastic_net(X, y, l_optimal, a[0])  # lasso
     print(B)
-    B = coordinate_descent(X, y, l_optimal, a[5])  # ridge
+    B = elastic_net(X, y, l_optimal, a[5])  # ridge
     print(B)
 
 
