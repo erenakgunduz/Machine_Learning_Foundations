@@ -17,9 +17,9 @@ fmt = logging.Formatter(
 fh.setFormatter(fmt)
 logger.addHandler(fh)
 
-
-# grid of tuning parameters represented by lambda
-l = np.logspace(-2, 4, 7)
+# --- all tuning parameters ---
+l = np.logspace(-2, 6, 9)  # lambda, from 1e-2 to 1e6, and with nine total samples
+a = np.linspace(0, 1, 6)  # alpha, from 0 to 1, now with six evenly spaced samples
 
 
 def preprocess_data(filename: str) -> tuple:
@@ -35,7 +35,7 @@ def preprocess_data(filename: str) -> tuple:
 
         df = pd.read_csv(datafile, sep=",")  # read and pass to dataframe
         mapping = {
-            "Gender": {"Female": 0, "Male": 1},
+            "Gender": {"Male": 0, "Female": 1},
             "Student": {"No": 0, "Yes": 1},
             "Married": {"No": 0, "Yes": 1},
         }  # so no ambiguity about how we encode categorical columns
@@ -48,8 +48,8 @@ def preprocess_data(filename: str) -> tuple:
         sys.exit("Check if things are right and try again :)")
 
 
-def ridge_regression(data) -> tuple:
-    "Establish design matrix and response vector, prepare both for ridge regression"
+def elastic_net(data) -> tuple:
+    "Establish design matrix and response vector, prepare both for elastic net"
     y = data[:, 9]  # extract only the data from the output column (balance)
     y = (lambda c: c - c.mean())(y)  # IIFE to center response vector
     logger.debug(y.shape)
@@ -59,30 +59,36 @@ def ridge_regression(data) -> tuple:
     X = (dm - np.mean(dm, axis=0)) / np.std(dm, axis=0)  # standardize (center & scale)
 
     logger.debug(X.shape)
-    logger.debug([np.mean(X[:, k]) for k in range(X.shape[1])])
-    logger.debug([np.std(X[:, k]) for k in range(X.shape[1])])
+    logger.debug(np.mean(X[:, 6]))
+    logger.debug(np.std(X[:, 6]))
     return (X, y)
 
 
-def gradient_descent(X, y, l, a=10**-5) -> np.ndarray:
-    "Implementation of vectorized batch gradient descent with learning rate alpha, applying ridge regression"
+def coordinate_descent(X, y, l, a) -> np.ndarray:
+    "Implementation of vectorized coordinate descent, applying elastic net"
 
-    def gd(l):
+    def cd(l, a):
+        # b vector, each value (b_k) remains constant
+        b = np.array([np.sum(X[:, k] ** 2) for k in range(X.shape[1])])
         # starting parameters vector
-        b = np.array([np.random.rand() for _ in range(X.shape[1])])
-        for _ in range(10**5):  # total iterations for each tuning parameter
-            b = b - 2 * a * (l * b - X.T @ (y - X @ b))
-        return b
+        beta = np.array([np.random.rand() for _ in range(X.shape[1])])
+        for _ in range(1000):  # total iterations
+            for k, _ in enumerate(beta):
+                x_k = X[:, k]
+                a_k = x_k.T @ (y - X @ beta + x_k * beta[k])
+                relu = np.maximum(0, np.abs(a_k) - (l * (1 - a) / 2))
+                beta[k] = np.sign(a_k) * relu / (b[k] + l * a)
+        return beta
 
-    coeffs = np.zeros((7, 9))
-    logger.debug(coeffs)
+    coeffs = np.zeros((6, 9, 9))
 
-    if not isinstance(l, (int, float)):
-        for index, val in enumerate(l):
-            b = gd(val)
-            coeffs[index] = b
+    if not isinstance(l, (int, float)) and not isinstance(a, (int, float)):
+        for i_a, val_a in enumerate(a):
+            for i_l, val_l in enumerate(l):
+                beta = cd(val_l, val_a)
+                coeffs[i_a, i_l] = beta
     else:
-        coeffs = gd(l)
+        coeffs = cd(l, a)
     return coeffs
 
 
@@ -110,20 +116,27 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
         # logger.debug(f"{train.shape}\n{validation.shape}")
         # logger.debug(train[:1])
         # logger.debug(validation[:1])
-        train_X, train_y = ridge_regression(train)
-        val_X, val_y = ridge_regression(validation)
-        b = gradient_descent(train_X, train_y, l)
+        train_X, train_y = elastic_net(train)
+        val_X, val_y = elastic_net(validation)
+        b = coordinate_descent(train_X, train_y, l, a)
         # after preparing and training data, once again check that things look ok
         logger.debug(f"{l.shape} {b.shape} {val_X.shape} {b[0].shape} {val_y.shape[0]}")
         mse = [
-            ((val_y - val_X @ b[i]).T @ (val_y - val_X @ b[i]) / val_y.shape[0])
-            for i, _ in enumerate(l)
+            [
+                (
+                    (val_y - val_X @ b[i_a, i_l]).T
+                    @ (val_y - val_X @ b[i_a, i_l])
+                    / val_y.shape[0]
+                )
+                for i_l, _ in enumerate(l)
+            ]
+            for i_a, _ in enumerate(b)
         ]
         cv_errors.append(mse)
 
     cv_error = np.array(cv_errors).T
     logger.debug(f"{cv_error.shape} {cv_error}")
-    cv_error = np.array([l.mean() for l in cv_error])
+    cv_error = cv_error.mean(axis=2)
     logger.debug(f"{cv_error.shape} {cv_error}")
     return cv_error
 
@@ -131,31 +144,47 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
 def main():
     columns, data = preprocess_data("Credit_N400_p9.csv")  # unpack the tuple
     # --- Deliverable 1 ---
-    X, y = ridge_regression(data)
-    # transpose so that each row is one of the nine features with the seven columns for TP
-    b = gradient_descent(X, y, l).T  # use default value for learning rate
-    # this way, each index (row) has the vector I need to plot points
-    plt.figure(figsize=(8, 6))
-    plt.xscale("log")
-    [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(b)]
-    plt.xlabel(r"Tuning parameter ($\lambda$)")
-    plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
-    plt.legend(title="Features", fontsize="small")
-    plt.savefig("img/assign1/deliverable1.png", dpi=200)
+    X, y = elastic_net(data)
+    B = coordinate_descent(X, y, l, a)
+    logger.debug(f"{B.shape}\n{B}")
+    for index, alpha in enumerate(B):
+        plt.figure(figsize=(8, 6))
+        plt.xscale("log")
+        # transpose so that each row is one of the nine features with the nine columns for TP
+        # this way, each index (row) has the vector I need to plot points
+        [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(alpha.T)]
+        plt.xlabel(r"Tuning parameter ($\lambda$)")
+        plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
+        plt.legend(title="Features", fontsize="small")
+        plt.savefig(f"img/assign2/deliverable1_{index}.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    plt.plot(l, cv_error)
+    [plt.plot(l, cv, label=f"{round(a[i], 1)}") for i, cv in enumerate(cv_error.T)]
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
-    plt.savefig("img/assign1/deliverable2.png", dpi=200)
+    plt.legend(title=r"$\alpha$", fontsize="small")
+    plt.savefig("img/assign2/deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
-    l_optimal = float(l[cv_error.argmin()])
-    print(l_optimal)
+    logger.debug(cv_error.argmin())
+    logger.debug(cv_error.min())
+    logger.debug(
+        cv_error[
+            cv_error.argmin() // cv_error.shape[1],  # gets the row
+            cv_error.argmin() % cv_error.shape[1],  # gets the column
+        ]
+    )
+    l_optimal = float(l[cv_error.argmin() // cv_error.shape[1]])
+    a_optimal = float(a[cv_error.argmin() % cv_error.shape[1]])
+    print(l_optimal, a_optimal)
     # --- Deliverable 4 ---
-    b = gradient_descent(X, y, l_optimal)
-    print(b)
+    B = coordinate_descent(X, y, l_optimal, a_optimal)
+    print(B)
+    B = coordinate_descent(X, y, l_optimal, a[0])  # lasso
+    print(B)
+    B = coordinate_descent(X, y, l_optimal, a[5])  # ridge
+    print(B)
 
 
 if __name__ == "__main__":
