@@ -139,13 +139,13 @@ def main():
     )
     l_optimal = float(l[cv_error.argmin() // cv_error.shape[1]])
     a_optimal = float(a[cv_error.argmin() % cv_error.shape[1]])
-    print(l_optimal, a_optimal)
+    print(l_optimal, a[-(np.where(a == a_optimal)[0][0]) - 1])
     # --- Deliverable 4 ---
     B = elastic_net(X, y, l_optimal, a_optimal)
     print(B)
-    B = elastic_net(X, y, l_optimal, a[0])  # lasso
+    B = elastic_net(X, y, l_optimal, a[5])  # lasso
     print(B)
-    B = elastic_net(X, y, l_optimal, a[5])  # ridge
+    B = elastic_net(X, y, l_optimal, a[0])  # ridge
     print(B)
 
 
