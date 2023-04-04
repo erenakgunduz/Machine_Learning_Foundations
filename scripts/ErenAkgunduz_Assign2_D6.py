@@ -20,6 +20,8 @@ fmt = logging.Formatter(
 fh.setFormatter(fmt)
 logger.addHandler(fh)
 
+file_path = os.path.dirname(os.path.realpath(__file__))
+
 # --- all tuning parameters ---
 l = np.logspace(-2, 6, 9)  # lambda, from 1e-2 to 1e6, and with nine total samples
 a = np.linspace(0, 1, 6)  # alpha, from 0 to 1, now with six evenly spaced samples
@@ -31,7 +33,7 @@ def preprocess_data(filename: str) -> tuple:
         raise TypeError("Filename should be a string :)")
 
     try:
-        datafile = f"{os.getcwd()}/../data/{filename}"
+        datafile = f"{file_path}/../data/{filename}"
         logger.debug(datafile)
         if not os.path.exists(datafile):
             raise OSError("Expected data file, didn't find it :/")
@@ -118,7 +120,7 @@ def main():
         plt.xlabel(r"Tuning parameter ($\lambda$)")
         plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
         plt.legend(title="Features", fontsize="small")
-        plt.savefig(f"../img/assign2/deliverable1_{index}_d6.png", dpi=200)
+        plt.savefig(f"{file_path}/../img/assign2/deliverable1_{index}_d6.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = elastic_net(X, y, l, a, True)
     plt.figure(figsize=(8, 6))
@@ -127,7 +129,7 @@ def main():
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.legend(title=r"$\alpha$", fontsize="small")
-    plt.savefig("../img/assign2/deliverable2_d6.png", dpi=200)
+    plt.savefig(f"{file_path}/../img/assign2/deliverable2_d6.png", dpi=200)
     # --- Deliverable 3 ---
     logger.debug(cv_error.argmin())
     logger.debug(cv_error.min())

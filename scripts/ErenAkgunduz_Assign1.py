@@ -17,6 +17,8 @@ fmt = logging.Formatter(
 fh.setFormatter(fmt)
 logger.addHandler(fh)
 
+file_path = os.path.dirname(os.path.realpath(__file__))
+
 
 # grid of tuning parameters represented by lambda
 l = np.logspace(-2, 4, 7)
@@ -28,7 +30,7 @@ def preprocess_data(filename: str) -> tuple:
         raise TypeError("Filename should be a string :)")
 
     try:
-        datafile = f"{os.getcwd()}/../data/{filename}"
+        datafile = f"{file_path}/../data/{filename}"
         logger.debug(datafile)
         if not os.path.exists(datafile):
             raise OSError("Expected data file, didn't find it :/")
@@ -91,10 +93,8 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
     if not isinstance(k, int):
         raise TypeError("Number of folds should be an integer :)")
 
-    data_shuffled = data  # make a copy of the original data
-    # shuffle the copy so the data in each fold are randomly determined
     # np.random.seed(0)
-    np.random.shuffle(data_shuffled)
+    data_shuffled = np.random.permutation(data)  # shuffled copy of the original data
     logger.debug(f"{data_shuffled.shape}\n{data_shuffled}")
 
     # create tensor containing each equally shaped fold
@@ -103,7 +103,9 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
 
     cv_errors = []
     for index, fold in enumerate(folds):
+        logger.debug("\n")
         logger.debug(index)
+
         train = np.delete(folds, index, axis=0)
         train = train.reshape(-1, train.shape[2])
         validation = fold
@@ -141,7 +143,7 @@ def main():
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
     plt.legend(title="Features", fontsize="small")
-    plt.savefig("../img/assign1/deliverable1.png", dpi=200)
+    plt.savefig(f"{file_path}/../img/assign1/deliverable1.png", dpi=200)
     # --- Deliverable 2 ---
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
@@ -149,7 +151,7 @@ def main():
     plt.plot(l, cv_error)
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
-    plt.savefig("../img/assign1/deliverable2.png", dpi=200)
+    plt.savefig(f"{file_path}/../img/assign1/deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
     l_optimal = float(l[cv_error.argmin()])
     print(l_optimal)
