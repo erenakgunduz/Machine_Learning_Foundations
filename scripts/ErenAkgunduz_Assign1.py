@@ -1,10 +1,10 @@
+import logging
 import os
 import sys
-import logging
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,8 +20,8 @@ logger.addHandler(fh)
 file_path = os.path.dirname(os.path.realpath(__file__))
 
 
-# grid of tuning parameters represented by lambda
-l = np.logspace(-2, 4, 7)
+# grid of tuning parameters
+lambdas = np.logspace(-2, 4, 7)
 
 
 def preprocess_data(filename: str) -> tuple:
@@ -66,25 +66,25 @@ def ridge_regression(data) -> tuple:
     return (X, y)
 
 
-def gradient_descent(X, y, l, a=10**-5) -> np.ndarray:
-    "Implementation of vectorized batch gradient descent with learning rate alpha, applying ridge regression"
+def gradient_descent(X, y, lmbd, a=10**-5) -> np.ndarray:
+    "Vectorized batch gradient descent w/ learning rate alpha applying ridge regression"
 
-    def gd(l):
+    def gd(lmbd):
         # starting parameters vector
         b = np.array([np.random.rand() for _ in range(X.shape[1])])
         for _ in range(10**5):  # total iterations for each tuning parameter
-            b = b - 2 * a * (l * b - X.T @ (y - X @ b))
+            b = b - 2 * a * (lmbd * b - X.T @ (y - X @ b))
         return b
 
     coeffs = np.zeros((7, 9))
     logger.debug(coeffs)
 
-    if not isinstance(l, (int, float)):
-        for index, val in enumerate(l):
+    if not isinstance(lmbd, (int, float)):
+        for index, val in enumerate(lmbd):
             b = gd(val)
             coeffs[index] = b
     else:
-        coeffs = gd(l)
+        coeffs = gd(lmbd)
     return coeffs
 
 
@@ -114,18 +114,20 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
         # logger.debug(validation[:1])
         train_X, train_y = ridge_regression(train)
         val_X, val_y = ridge_regression(validation)
-        b = gradient_descent(train_X, train_y, l)
+        b = gradient_descent(train_X, train_y, lambdas)
         # after preparing and training data, once again check that things look ok
-        logger.debug(f"{l.shape} {b.shape} {val_X.shape} {b[0].shape} {val_y.shape[0]}")
+        logger.debug(
+            f"{lambdas.shape} {b.shape} {val_X.shape} {b[0].shape} {val_y.shape[0]}"
+        )
         mse = [
             ((val_y - val_X @ b[i]).T @ (val_y - val_X @ b[i]) / val_y.shape[0])
-            for i, _ in enumerate(l)
+            for i, _ in enumerate(lambdas)
         ]
         cv_errors.append(mse)
 
     cv_error = np.array(cv_errors).T
     logger.debug(f"{cv_error.shape} {cv_error}")
-    cv_error = np.array([l.mean() for l in cv_error])
+    cv_error = np.array([lmbd.mean() for lmbd in cv_error])
     logger.debug(f"{cv_error.shape} {cv_error}")
     return cv_error
 
@@ -134,12 +136,12 @@ def main():
     columns, data = preprocess_data("Credit_N400_p9.csv")  # unpack the tuple
     # --- Deliverable 1 ---
     X, y = ridge_regression(data)
-    # transpose so that each row is one of the nine features with the seven columns for TP
-    b = gradient_descent(X, y, l).T  # use default value for learning rate
+    # transpose so that each row one of the nine features with the seven columns for TP
+    b = gradient_descent(X, y, lambdas).T  # use default value for learning rate
     # this way, each index (row) has the vector I need to plot points
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(b)]
+    [plt.plot(lambdas, b, label=f"{columns[i]}") for i, b in enumerate(b)]
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
     plt.legend(title="Features", fontsize="small")
@@ -148,12 +150,12 @@ def main():
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    plt.plot(l, cv_error)
+    plt.plot(lambdas, cv_error)
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.savefig(f"{file_path}/../img/assign1/deliverable2.png", dpi=200)
     # --- Deliverable 3 ---
-    l_optimal = float(l[cv_error.argmin()])
+    l_optimal = float(lambdas[cv_error.argmin()])
     print(l_optimal)
     # --- Deliverable 4 ---
     b = gradient_descent(X, y, l_optimal)

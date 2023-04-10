@@ -1,10 +1,10 @@
+import logging
 import os
 import sys
-import logging
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,8 +20,8 @@ logger.addHandler(fh)
 file_path = os.path.dirname(os.path.realpath(__file__))
 
 # --- all tuning parameters ---
-l = np.logspace(-2, 6, 9)  # lambda, from 1e-2 to 1e6, and with nine total samples
-a = np.linspace(0, 1, 6)  # alpha, from 0 to 1, now with six evenly spaced samples
+lambdas = np.logspace(-2, 6, 9)  # from 1e-2 to 1e6, and with nine total samples
+alphas = np.linspace(0, 1, 6)  # from 0 to 1, now with six evenly spaced samples
 
 
 def preprocess_data(filename: str) -> tuple:
@@ -66,10 +66,10 @@ def elastic_net(data) -> tuple:
     return (X, y)
 
 
-def coordinate_descent(X, y, l, a) -> np.ndarray:
+def coordinate_descent(X, y, lmbd, a) -> np.ndarray:
     "Implementation of vectorized coordinate descent, applying elastic net"
 
-    def cd(l, a):
+    def cd(lmbd, a):
         # b vector, each value (b_k) remains constant
         b = np.array([np.sum(X[:, k] ** 2) for k in range(X.shape[1])])
         # starting parameters vector
@@ -78,19 +78,19 @@ def coordinate_descent(X, y, l, a) -> np.ndarray:
             for k, _ in enumerate(beta):
                 x_k = X[:, k]
                 a_k = x_k.T @ (y - X @ beta + x_k * beta[k])
-                relu = np.maximum(0, np.abs(a_k) - (l * (1 - a) / 2))
-                beta[k] = np.sign(a_k) * relu / (b[k] + l * a)
+                relu = np.maximum(0, np.abs(a_k) - (lmbd * (1 - a) / 2))
+                beta[k] = np.sign(a_k) * relu / (b[k] + lmbd * a)
         return beta
 
     coeffs = np.zeros((6, 9, 9))
 
-    if not isinstance(l, (int, float)) and not isinstance(a, (int, float)):
+    if not isinstance(lmbd, (int, float)) and not isinstance(a, (int, float)):
         for i_a, val_a in enumerate(a):
-            for i_l, val_l in enumerate(l):
+            for i_l, val_l in enumerate(lmbd):
                 beta = cd(val_l, val_a)
                 coeffs[i_a, i_l] = beta
     else:
-        coeffs = cd(l, a)
+        coeffs = cd(lmbd, a)
     return coeffs
 
 
@@ -120,9 +120,11 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
         # logger.debug(validation[:1])
         train_X, train_y = elastic_net(train)
         val_X, val_y = elastic_net(validation)
-        b = coordinate_descent(train_X, train_y, l, a)
+        b = coordinate_descent(train_X, train_y, lambdas, alphas)
         # after preparing and training data, once again check that things look ok
-        logger.debug(f"{l.shape} {b.shape} {val_X.shape} {b[0].shape} {val_y.shape[0]}")
+        logger.debug(
+            f"{lambdas.shape} {b.shape} {val_X.shape} {b[0].shape} {val_y.shape[0]}"
+        )
         mse = [
             [
                 (
@@ -130,7 +132,7 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
                     @ (val_y - val_X @ b[i_a, i_l])
                     / val_y.shape[0]
                 )
-                for i_l, _ in enumerate(l)
+                for i_l, _ in enumerate(lambdas)
             ]
             for i_a, _ in enumerate(b)
         ]
@@ -147,14 +149,14 @@ def main():
     columns, data = preprocess_data("Credit_N400_p9.csv")  # unpack the tuple
     # --- Deliverable 1 ---
     X, y = elastic_net(data)
-    B = coordinate_descent(X, y, l, a)
+    B = coordinate_descent(X, y, lambdas, alphas)
     logger.debug(f"{B.shape}\n{B}")
     for index, alpha in enumerate(B):
         plt.figure(figsize=(8, 6))
         plt.xscale("log")
-        # transpose so that each row is one of the nine features with the nine columns for TP
+        # transpose so that each row one of the nine features with nine columns for TP
         # this way, each index (row) has the vector I need to plot points
-        [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(alpha.T)]
+        [plt.plot(lambdas, b, label=f"{columns[i]}") for i, b in enumerate(alpha.T)]
         plt.xlabel(r"Tuning parameter ($\lambda$)")
         plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
         plt.legend(title="Features", fontsize="small")
@@ -163,7 +165,10 @@ def main():
     cv_error = cross_validation(data)
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    [plt.plot(l, cv, label=f"{round(a[i], 1)}") for i, cv in enumerate(cv_error.T)]
+    [
+        plt.plot(lambdas, cv, label=f"{round(alphas[i], 1)}")
+        for i, cv in enumerate(cv_error.T)
+    ]
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.legend(title=r"$\alpha$", fontsize="small")
@@ -177,15 +182,15 @@ def main():
             cv_error.argmin() % cv_error.shape[1],  # gets the column
         ]
     )
-    l_optimal = float(l[cv_error.argmin() // cv_error.shape[1]])
-    a_optimal = float(a[cv_error.argmin() % cv_error.shape[1]])
+    l_optimal = float(lambdas[cv_error.argmin() // cv_error.shape[1]])
+    a_optimal = float(alphas[cv_error.argmin() % cv_error.shape[1]])
     print(l_optimal, a_optimal)
     # --- Deliverable 4 ---
     B = coordinate_descent(X, y, l_optimal, a_optimal)
     print(B)
-    B = coordinate_descent(X, y, l_optimal, a[0])  # lasso
+    B = coordinate_descent(X, y, l_optimal, alphas[0])  # lasso
     print(B)
-    B = coordinate_descent(X, y, l_optimal, a[5])  # ridge
+    B = coordinate_descent(X, y, l_optimal, alphas[5])  # ridge
     print(B)
 
 

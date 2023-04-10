@@ -1,13 +1,13 @@
+import logging
 import os
 import sys
-import logging
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import cross_val_score
-
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -23,8 +23,8 @@ logger.addHandler(fh)
 file_path = os.path.dirname(os.path.realpath(__file__))
 
 
-# grid of tuning parameters represented by lambda
-l = np.logspace(-2, 4, 7)
+# grid of tuning parameters
+lambdas = np.logspace(-2, 4, 7)
 
 
 def preprocess_data(filename: str) -> tuple:
@@ -68,7 +68,7 @@ def standardize(data) -> tuple:
     return (X, y)
 
 
-def ridge_regression(X, y, l, cv: bool = False, k: int = 5) -> np.ndarray:
+def ridge_regression(X, y, lmbd, cv: bool = False, k: int = 5) -> np.ndarray:
     if not isinstance(k, int):
         raise TypeError("Number of folds should be an integer :)")
 
@@ -80,8 +80,8 @@ def ridge_regression(X, y, l, cv: bool = False, k: int = 5) -> np.ndarray:
         ridge.fit(X, y)
         return ridge.coef_
 
-    if not isinstance(l, (int, float)):
-        for index, val in enumerate(l):
+    if not isinstance(lmbd, (int, float)):
+        for index, val in enumerate(lmbd):
             if cv:
                 cv_errors.append(
                     np.abs(
@@ -97,7 +97,7 @@ def ridge_regression(X, y, l, cv: bool = False, k: int = 5) -> np.ndarray:
             else:
                 coeffs[index] = ridge(val)
     else:
-        coeffs = ridge(l)
+        coeffs = ridge(lmbd)
 
     if cv:
         logger.debug(f"{np.array(cv_errors).shape}\n{np.array(cv_errors)}")
@@ -110,26 +110,26 @@ def main():
     columns, data = preprocess_data("Credit_N400_p9.csv")  # unpack the tuple
     # --- Deliverable 1 ---
     X, y = standardize(data)
-    # transpose so that each row is one of the nine features with the seven columns for TP
-    b = ridge_regression(X, y, l).T
+    # transpose so that each row one of the nine features with the seven columns for TP
+    b = ridge_regression(X, y, lambdas).T
     # this way, each index (row) has the vector I need to plot points
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    [plt.plot(l, b, label=f"{columns[i]}") for i, b in enumerate(b)]
+    [plt.plot(lambdas, b, label=f"{columns[i]}") for i, b in enumerate(b)]
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"Regression coefficients ($\hat{\beta}$)")
     plt.legend(title="Features", fontsize="small")
     plt.savefig(f"{file_path}/../img/assign1/deliverable1_d6.png", dpi=200)
     # --- Deliverable 2 ---
-    cv_error = ridge_regression(X, y, l, True)
+    cv_error = ridge_regression(X, y, lambdas, True)
     plt.figure(figsize=(8, 6))
     plt.xscale("log")
-    plt.plot(l, cv_error)
+    plt.plot(lambdas, cv_error)
     plt.xlabel(r"Tuning parameter ($\lambda$)")
     plt.ylabel(r"$CV_{(5)}$ mean squared error")
     plt.savefig(f"{file_path}/../img/assign1/deliverable2_d6.png", dpi=200)
     # --- Deliverable 3 ---
-    l_optimal = float(l[cv_error.argmin()])
+    l_optimal = float(lambdas[cv_error.argmin()])
     print(l_optimal)
     # --- Deliverable 4 ---
     b = ridge_regression(X, y, l_optimal)
