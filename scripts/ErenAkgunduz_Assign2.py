@@ -95,7 +95,7 @@ def coordinate_descent(X, y, lmbd, a) -> np.ndarray:
 
 
 def cross_validation(data, k: int = 5) -> np.ndarray:
-    "Implementation of relevant gradient descent utilizing k-fold cross validation"
+    "Implementation of relevant descent algorithm utilizing k-fold cross validation"
     if not isinstance(k, int):
         raise TypeError("Number of folds should be an integer :)")
 
