@@ -193,7 +193,7 @@ def main():
     test_X, _ = Begin(test_data).initialize()  # discard test responses, don't need them
     U = np.exp(test_X @ B)  # use test X and parameters trained with optimal lambda
     P = U / U.sum(axis=1, keepdims=True)  # new normalized probability matrix
-    print(P.shape, P)  # should be 111 x 5, prob for all classes for each observation
+    print(P.shape, P)  # should b 111x5-probability for all classes for each observation
     print(P.argsort(axis=1))  # show indices sorted in order from least to most probable
     print(P.argmax(axis=1))  # show only the most probable class for observations
     # new list which takes class index and swaps it with corresponding label string
