@@ -188,30 +188,37 @@ def main():
     l_optimal = float(lambdas[cv_errors.argmin()])
     print(l_optimal)
     # --- Deliverable 4 ---
-    B = gradient_descent(X, Y, l_optimal)
-    columns, test_data = preprocess_data("TestData_N111_p10.csv")
-    test_X, _ = Begin(test_data).initialize()
-    U = np.exp(test_X @ B)
-    P = U / U.sum(axis=1, keepdims=True)
-    print(P.shape, P)
-    print(P.argsort(axis=1))
-    print(P.argmax(axis=1))
+    B = gradient_descent(X, Y, l_optimal)  # retrain model
+    columns, test_data = preprocess_data("TestData_N111_p10.csv")  # load in test data
+    test_X, _ = Begin(test_data).initialize()  # discard test responses, don't need them
+    U = np.exp(test_X @ B)  # use test X and parameters trained with optimal lambda
+    P = U / U.sum(axis=1, keepdims=True)  # new normalized probability matrix
+    print(P.shape, P)  # should be 111 x 5, prob for all classes for each observation
+    print(P.argsort(axis=1))  # show indices sorted in order from least to most probable
+    print(P.argmax(axis=1))  # show only the most probable class for observations
+    # new list which takes class index and swaps it with corresponding label string
     most_probable = [Begin(data).labels[i] for i in P.argmax(axis=1)]
+    # data still in order so slice for five unknown, 54 Mexican, and 52 African American
     mp_u, mp_mx, mp_aa = (most_probable[:5], most_probable[5:59], most_probable[59:])
     print(mp_u, mp_mx, mp_aa)
+    # in order to quickly get & plot the # of observations for each class prediction
     keys_mx, counts_mx = np.unique(mp_mx, return_counts=True)
     keys_aa, counts_aa = np.unique(mp_aa, return_counts=True)
 
+    # choose colormap, this one is perceptually uniform and one of my favorites
     cmap = plt.get_cmap("plasma")
     fig, (ax1, ax2) = plt.subplots(
         1, 2, constrained_layout=True, sharex=True, sharey=True
-    )
-    ax1.set_title(Begin(test_data).labels[1])
-    plot1 = ax1.bar(keys_mx, counts_mx, label=counts_mx, color=cmap(counts_mx))
-    ax1.bar_label(plot1)
-    ax2.set_title(f"{Begin(test_data).labels[0][:7]}-{Begin(test_data).labels[0][7:]}")
-    plot2 = ax2.bar(keys_aa, counts_aa, label=counts_aa, color=cmap(counts_aa))
+    )  # establish the figure and two subplots, they will be bar plots
+
+    ax1.set_title(Begin(test_data).labels[1])  # the string "Mexican"
+    plot1 = ax1.bar(keys_mx, counts_mx, color=cmap(counts_mx))  # plot & apply cmap to y
+    ax1.bar_label(plot1)  # add labels so we can see exact # for each class
+    # (f"{Begin(test_data).labels[0][:7]} {Begin(test_data).labels[0][7:]}") works too
+    ax2.set_title("African American")  # but this is much easier+cleaner
+    plot2 = ax2.bar(keys_aa, counts_aa, color=cmap(counts_aa))
     ax2.bar_label(plot2)
+
     fig.suptitle("Model results for most probable ancestry label of test data")
     fig.supxlabel("Training labels")
     fig.supylabel("# of observations")
