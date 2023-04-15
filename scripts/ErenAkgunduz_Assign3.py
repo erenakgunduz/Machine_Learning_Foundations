@@ -143,7 +143,7 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
         # now that data is trained and prepared, once again check that things look ok
         logger.debug(f"{lambdas.shape} {P.shape} {val_Y.shape}")
         # obtain categorical cross-entropy loss by multiplying all values element-wise
-        cce = np.array([-np.sum(val_Y * np.log10(p)) / val_Y.shape[0] for p in P])
+        cce = np.array([np.sum(val_Y * np.log10(p)) * -(1 / val_Y.shape[0]) for p in P])
         logger.debug(f"{cce.shape}\n{cce}")
         cv_errors.append(cce)
 
@@ -194,36 +194,82 @@ def main():
     U = np.exp(test_X @ B)  # use test X and parameters trained with optimal lambda
     P = U / U.sum(axis=1, keepdims=True)  # new normalized probability matrix
     print(P.shape, P)  # should b 111x5-probability for all classes for each observation
-    print(P.argsort(axis=1))  # show indices sorted in order from least to most probable
+    ordered_probs = P.argsort(axis=1)
+    print(ordered_probs)  # show indices sorted in order from least to most probable
     print(P.argmax(axis=1))  # show only the most probable class for observations
-    # new list which takes class index and swaps it with corresponding label string
-    most_probable = [Begin(data).labels[i] for i in P.argmax(axis=1)]
-    # data still in order so slice for five unknown, 54 Mexican, and 52 African American
-    mp_u, mp_mx, mp_aa = (most_probable[:5], most_probable[5:59], most_probable[59:])
-    print(mp_u, mp_mx, mp_aa)
-    # in order to quickly get & plot the # of observations for each class prediction
+
+    cmap = plt.get_cmap("plasma")  # set a nice colormap, it's perceptually uniform too
+
+    def barplots(op):
+        # new list which takes class index and swaps it with corresponding label string
+        most_probable = [Begin(data).labels[i] for i in op[:, -1]]
+        # data still in order so slice for 5 unknown, 54 Mexican, & 52 African American
+        mp_u, mp_mx, mp_aa = (
+            most_probable[:5],
+            most_probable[5:59],
+            most_probable[59:],
+        )
+        print(mp_u, mp_mx, mp_aa)
+        # in order to quickly get & plot the # of observations for each class prediction
+        keys_mx, counts_mx = np.unique(mp_mx, return_counts=True)
+        keys_aa, counts_aa = np.unique(mp_aa, return_counts=True)
+
+        fig, (ax1, ax2) = plt.subplots(
+            1, 2, constrained_layout=True, sharex=True, sharey=True
+        )  # establish the figure and two subplots
+
+        ax1.set_title(Begin(test_data).labels[1])  # the string "Mexican"
+        # plot bars and apply colormap based on y
+        plot1 = ax1.bar(keys_mx, counts_mx, color=cmap(counts_mx))
+        ax1.bar_label(plot1)  # add labels so we can see exact # for each class
+        # f"{Begin(test_data).labels[0][:7]} {Begin(test_data).labels[0][7:]}" works too
+        ax2.set_title("African American")  # but this is much easier+cleaner
+        plot2 = ax2.bar(keys_aa, counts_aa, color=cmap(counts_aa))
+        ax2.bar_label(plot2)
+
+        fig.suptitle("Model results for most probable ancestry label of test data")
+        fig.supxlabel("Training labels")
+        fig.supylabel("# of observations")
+        fig.set_size_inches(12, 7.5)
+        return plt.gcf()
+
+    bars_og = barplots(ordered_probs)  # plot the original predictions of most probable
+    bars_og.savefig(f"{file_path}/../img/assign3/deliverable4_og.png", dpi=200)
+
+    for i, probs in enumerate(ordered_probs[59:]):  # correction for African Americans
+        if probs[4] == 1:  # was curious to see if the most probable label is East Asian
+            ordered_probs[59:][i][4] = probs[3]  # then we swap w/ the 2nd most probable
+
+    bars_sb = barplots(ordered_probs)  # plot again, now with substitutions applied
+    bars_sb.savefig(f"{file_path}/../img/assign3/deliverable4_sb.png", dpi=200)
+
+    # prepare the array again, this time for donut plots
+    most_probable = [Begin(data).labels[i] for i in ordered_probs[:, -1]]
+    mp_mx, mp_aa = (most_probable[5:59], most_probable[59:])
     keys_mx, counts_mx = np.unique(mp_mx, return_counts=True)
     keys_aa, counts_aa = np.unique(mp_aa, return_counts=True)
-
-    # choose colormap, this one is perceptually uniform and one of my favorites
-    cmap = plt.get_cmap("plasma")
-    fig, (ax1, ax2) = plt.subplots(
-        1, 2, constrained_layout=True, sharex=True, sharey=True
-    )  # establish the figure and two subplots, they will be bar plots
-
-    ax1.set_title(Begin(test_data).labels[1])  # the string "Mexican"
-    plot1 = ax1.bar(keys_mx, counts_mx, color=cmap(counts_mx))  # plot & apply cmap to y
-    ax1.bar_label(plot1)  # add labels so we can see exact # for each class
-    # (f"{Begin(test_data).labels[0][:7]} {Begin(test_data).labels[0][7:]}") works too
-    ax2.set_title("African American")  # but this is much easier+cleaner
-    plot2 = ax2.bar(keys_aa, counts_aa, color=cmap(counts_aa))
-    ax2.bar_label(plot2)
-
-    fig.suptitle("Model results for most probable ancestry label of test data")
-    fig.supxlabel("Training labels")
-    fig.supylabel("# of observations")
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.set_title(Begin(test_data).labels[1])
+    ax1.pie(
+        counts_mx,
+        labels=keys_mx,
+        autopct="%1.1f%%",
+        pctdistance=0.5,
+        colors=cmap(np.arange(keys_mx.shape[0]) * 100),
+        wedgeprops={"width": 0.35},
+    )
+    ax2.set_title("African American")
+    ax2.pie(
+        counts_aa,
+        labels=keys_aa,
+        autopct="%1.1f%%",
+        pctdistance=0.5,
+        colors=cmap(np.arange(keys_aa.shape[0]) * 100),
+        wedgeprops={"width": 0.35},
+    )
+    fig.suptitle("Predicted most probable ancestry label, test data+correction applied")
     fig.set_size_inches(12, 7.5)
-    plt.savefig(f"{file_path}/../img/assign3/deliverable4.png", dpi=200)
+    plt.savefig(f"{file_path}/../img/assign3/deliverable4_sb_donuts.png", dpi=200)
 
 
 if __name__ == "__main__":
