@@ -61,8 +61,8 @@ def ridge_regression(data) -> tuple:
     X = (dm - np.mean(dm, axis=0)) / np.std(dm, axis=0)  # standardize (center & scale)
 
     logger.debug(X.shape)
-    logger.debug([np.mean(X[:, k]) for k in range(X.shape[1])])
-    logger.debug([np.std(X[:, k]) for k in range(X.shape[1])])
+    logger.debug(X.mean(axis=0))
+    logger.debug(X.std(axis=0))
     return (X, y)
 
 
@@ -125,11 +125,9 @@ def cross_validation(data, k: int = 5) -> np.ndarray:
         ]
         cv_errors.append(mse)
 
-    cv_error = np.array(cv_errors).T
-    logger.debug(f"{cv_error.shape} {cv_error}")
-    cv_error = np.array([lmbd.mean() for lmbd in cv_error])
-    logger.debug(f"{cv_error.shape} {cv_error}")
-    return cv_error
+    logger.debug(f"{np.array(cv_errors).T.shape}\n{np.array(cv_errors).T}")
+    logger.debug(np.array(cv_errors).T.mean(axis=1))
+    return np.array(cv_errors).T.mean(axis=1)
 
 
 def main():

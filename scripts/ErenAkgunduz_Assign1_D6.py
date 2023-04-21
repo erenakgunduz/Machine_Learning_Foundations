@@ -63,8 +63,8 @@ def standardize(data) -> tuple:
     X = StandardScaler().fit_transform(dm)  # standardize (center & scale)
 
     logger.debug(X.shape)
-    logger.debug([np.mean(X[:, k]) for k in range(X.shape[1])])
-    logger.debug([np.std(X[:, k]) for k in range(X.shape[1])])
+    logger.debug(X.mean(axis=0))
+    logger.debug(X.std(axis=0))
     return (X, y)
 
 
