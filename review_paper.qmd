@@ -1,0 +1,25 @@
+---
+title: "Machine Learning for Smart Contracts"
+author: "Eren Akgunduz"
+format:
+  pdf:
+    template-partials: 
+      - before-body.tex
+    geometry:
+      - margin=1in
+    fontsize: 11pt
+    mainfont: Carlito-Regular
+    mainfontoptions: 
+      - Path=/Applications/LibreOffice.app/Contents/Resources/fonts/truetype/
+      - Extension=.ttf
+      - Ligatures=TeX
+      - BoldFont=Carlito-Bold
+      - ItalicFont=Carlito-Italic
+      - BoldItalicFont=Carlito-BoldItalic
+    linestretch: 1
+    indent: true
+    colorlinks: true
+    keep-tex: true
+bibliography: references.bib
+---
+
