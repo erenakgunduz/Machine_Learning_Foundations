@@ -19,7 +19,10 @@ format:
     linestretch: 1
     indent: true
     colorlinks: true
-    keep-tex: true
+    keep-tex: false
 bibliography: references.bib
 ---
 
+
+\newpage
+## References
