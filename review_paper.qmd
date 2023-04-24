@@ -20,7 +20,7 @@ format:
     linestretch: 2
     indent: true
     colorlinks: true
-    keep-tex: false
+    keep-tex: true
 bibliography: references.bib
 ---
 ## Introduction
