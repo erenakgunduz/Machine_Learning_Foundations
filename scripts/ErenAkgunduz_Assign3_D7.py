@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.preprocessing import StandardScaler, label_binarize
 
-# mypy: disable-error-code="call-overload"
+# pyright: reportGeneralTypeIssues=false, reportUnboundVariable=false
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

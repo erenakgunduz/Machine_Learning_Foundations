@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# mypy: disable-error-code="call-overload"
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -77,7 +75,7 @@ class Begin:
             else:
                 self.classes[i] = np.array([0, 0, 0, 0, 0])
 
-        Y = np.vstack(self.classes)  # response matrix
+        Y = np.vstack(self.classes)  # response matrix  # type: ignore
 
         logger.debug(X.shape)
         logger.debug(X.mean(axis=0))
